@@ -1,0 +1,68 @@
+# Entorno virtual
+env-sukha/
+venv/
+.venv/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.mypy_cache/
+.pyre/
+.python-version
+pip-selfcheck.json
+
+# Distribución / empaquetado
+build/
+dist/
+*.egg-info/
+.eggs/
+*.whl
+wheelhouse/
+
+# Dependencias instaladas localmente
+.env
+.env.*
+secrets.env
+*.env
+
+# Logs y reportes
+*.log
+*.out
+*.err
+coverage.xml
+htmlcov/
+.coverage
+
+# Base de datos local / archivos generados
+*.db
+*.sqlite3
+
+# IDE/editor
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# Sistema
+.DS_Store
+Thumbs.db
+
+# Python bytecode
+__pycache__/
+
+# PyInstaller
+*.manifest
+*.spec
+
+# VSCode settings / JetBrains
+.vscode/*
+!.vscode/settings.json   # opcional: mantener settings compartidos
+!.vscode/extensions.json # opcional
+
+# Otros
+*.pyc
+*.pyo
+*.pyd
+*.env

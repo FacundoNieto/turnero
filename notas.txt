@@ -1,0 +1,86 @@
+error que me tiraba el servidor desde Swagger cuando no editaba el __init__.py de la carpeta models:
+{
+  "detail": "Foreign key associated with column 'turnos.paciente_id' could not find table 'pacientes' with which to generate a foreign key to target column 'id'"
+}
+
+el archivo app/models/__init__.py había  que dejarlo así:
+
+from app.models.turno_model import Turno
+from app.models.paciente_model import Paciente
+from app.models.profesional_model import Profesional
+from app.models.estado_turno import EstadoTurno
+
+
+nuevo error:
+
+{
+  "detail": "(pymysql.err.IntegrityError) (1452, 'Cannot add or update a child row: a foreign key constraint fails (`sukha_test`.`turnos`, CONSTRAINT `fk_turno_profesional` FOREIGN KEY (`profesional_id`) REFERENCES `profesionales` (`id`))')\n[SQL: INSERT INTO turnos (paciente_id, profesional_id, estado_id, fecha_hora_inicio, fecha_hora_fin, creado_en, confirmado_en, cancelado_en) VALUES (%(paciente_id)s, %(profesional_id)s, %(estado_id)s, %(fecha_hora_inicio)s, %(fecha_hora_fin)s, %(creado_en)s, %(confirmado_en)s, %(cancelado_en)s)]\n[parameters: {'paciente_id': 0, 'profesional_id': 0, 'estado_id': 1, 'fecha_hora_inicio': datetime.datetime(2025, 12, 18, 15, 42, 45, 899000, tzinfo=TzInfo(0)), 'fecha_hora_fin': datetime.datetime(2025, 12, 18, 16, 42, 45, 899000, tzinfo=TzInfo(0)), 'creado_en': datetime.datetime(2025, 12, 18, 17, 45, 35, 681461), 'confirmado_en': None, 'cancelado_en': None}]\n(Background on this error at: https://sqlalche.me/e/20/gkpj)"
+}
+
+								18/12/2025
+
+Seguir con el modelo, el schema y el router de las tablas "bloqueos_agenda" (post, puts y gets) y "estados_turno" (solo gets)
+
+
+								27/12/2025
+
+Hacer el FSM:
+
+quiero que ahora avancemos con el FSM que me comentabas que había que cumplir a rajatabla en los primeros mensajes de este chat. Qué tengo que 
+hacer? Recordá que:
+
+me habías propuesto la siguiente tabla de estados_turno: 
+| Código     | Significado                                 |
+| ---------- | ------------------------------------------- |
+| RESERVADO  | Turno solicitado, pendiente de confirmación |
+| CONFIRMADO | Turno confirmado                            |
+| CANCELADO  | Turno cancelado                             |
+| NO_ASISTIO | Paciente no asistió                         |
+| COMPLETADO | Turno realizado                             |
+
+y que los eventos y diparos que me proponías eran estos (Los eventos son lo que dispara cambios de estado.):
+
+| Evento            | Quién lo dispara       |
+| ----------------- | ---------------------- |
+| solicitar_turno   | Paciente               |
+| confirmar_turno   | Paciente / Profesional |
+| cancelar_turno    | Paciente / Profesional |
+| vencer_reserva    | Sistema                |
+| marcar_no_asistio | Sistema / Profesional  |
+| marcar_completado | Profesional            |
+
+
+y que las transiciones válidas eran estas (esto es la FSM real, no existe volver atrás, si se necesita corregir algo → se crea otro turno.):
+
+RESERVADO
+ ├─ confirmar_turno → CONFIRMADO
+ ├─ cancelar_turno → CANCELADO
+ └─ vencer_reserva → CANCELADO
+
+CONFIRMADO
+ ├─ cancelar_turno → CANCELADO
+ ├─ marcar_no_asistio → NO_ASISTIO
+ └─ marcar_completado → COMPLETADO
+
+CANCELADO
+ └─ (estado final)
+
+NO_ASISTIO
+ └─ (estado final)
+
+COMPLETADO
+ └─ (estado final)
+
+
+y que la tabla formal  de  transiciones quedaba así (para mayor claridad)
+
+| Estado actual | Evento            | Nuevo estado |
+| ------------- | ----------------- | ------------ |
+| RESERVADO     | confirmar_turno   | CONFIRMADO   |
+| RESERVADO     | cancelar_turno    | CANCELADO    |
+| RESERVADO     | vencer_reserva    | CANCELADO    |
+| CONFIRMADO    | cancelar_turno    | CANCELADO    |
+| CONFIRMADO    | marcar_no_asistio | NO_ASISTIO   |
+| CONFIRMADO    | marcar_completado | COMPLETADO   |
+
+y que Todo lo que no esté acá está prohibido.
