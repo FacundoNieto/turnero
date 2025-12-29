@@ -9,6 +9,9 @@ from apscheduler.schedulers.background import BackgroundScheduler
 from app.scheduler import _procesar_turnos_sistema
 scheduler = BackgroundScheduler()
 
+from app.notificaciones_scheduler import procesar_notificaciones
+
+
 app = FastAPI(title="Sistema de Gestión de Turnos")
 app.include_router(turnos_router, prefix="/api")
 app.include_router(paciente_router, prefix="/api")
@@ -24,6 +27,7 @@ def health_check():
 def start_scheduler():
     if not scheduler.running:
         scheduler.add_job(_procesar_turnos_sistema, "interval", seconds=60)
+        scheduler.add_job(procesar_notificaciones, "interval", seconds=30)
         scheduler.start()
 
 

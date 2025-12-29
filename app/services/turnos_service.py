@@ -1,12 +1,22 @@
 #acá va la lógica del proyecto y no en los endpoints que está en app/api/turnos.py
 from sqlalchemy.orm import Session
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 from fastapi import HTTPException
 from datetime import datetime
 
 from app.models.turno_model import Turno
+from app.models.paciente_model import Paciente
+from app.models.profesional_model import Profesional
 from app.models.estado_turno_model import EstadoTurno
 from app.models.bloqueo_agenda_model import BloqueoAgenda
+
+from app.services.notificaciones_service import (
+    programar_notifs_confirmacion,
+    programar_notifs_cancelacion,
+    cancelar_notificaciones_pendientes_de_turno,
+    programar_notifs_creacion_turno,
+)
 
 # Eventos permitidos
 EVENTO_CONFIRMAR = "confirmar_turno"
@@ -67,13 +77,28 @@ def aplicar_evento_turno(
     elif nuevo_estado_codigo == "CANCELADO":
         turno.cancelado_en = ahora
 
+    # Gestión de notificaciones asociadas al turno
+    # Importante: NO envían nada acá, solo encolan en DB.
+    if nuevo_estado_codigo == "CONFIRMADO":
+        programar_notifs_confirmacion(db, turno)
+    elif nuevo_estado_codigo == "CANCELADO":
+        cancelar_notificaciones_pendientes_de_turno(db, turno.id)
+        programar_notifs_cancelacion(db, turno)
+    elif nuevo_estado_codigo in ["NO_ASISTIO", "COMPLETADO"]:
+        cancelar_notificaciones_pendientes_de_turno(db, turno.id)
+
     db.add(turno)
     try:
         db.commit()
+    except IntegrityError as e:
+        db.rollback()
+        raise HTTPException(status_code=409, detail="Conflicto: notificación duplicada o restricción UNIQUE.\n" + str(e))    
     except Exception as e:
         db.rollback()
         raise HTTPException(status_code=500, detail="Error al actualizar el estado del turno.\n" + str(e))
     db.refresh(turno)
+    db.refresh(turno, attribute_names=["estado"])
+
     return turno
 
 ESTADO_RESERVADO = 1
@@ -119,3 +144,73 @@ def hay_bloqueo_agenda(db: Session, profesional_id: int, inicio: datetime, fin: 
             fin > BloqueoAgenda.fecha_hora_inicio,
         ).first()
     )
+
+
+def crear_turno(
+    db: Session,
+    *,
+    paciente_id: int,
+    profesional_id: int,
+    inicio: datetime,
+    fin: datetime,
+):
+    # Validaciones
+    if fin <= inicio:
+        raise HTTPException(status_code=400, detail="La fecha de inicio debe ser anterior a la fecha de fin.")
+
+    # Verificar que el paciente y la profesional ingresados ya existan en la base de datos antes de crear el turno
+    paciente = db.get(Paciente, paciente_id) #SELECT * FROM pacientes WHERE id = payload.paciente_id
+    if not paciente:
+        # TODO (próximo paso): permitir crear el paciente automáticamente o que salte un popup en el frontend para que el usuario lo cree (haciendo un POST a la ruta /pacientes)
+        raise HTTPException(status_code=404, detail="Paciente no encontrado. Debe existir en la tabla pacientes")
+    
+    profesional = db.get(Profesional, profesional_id)
+    if not profesional:
+        raise HTTPException(status_code=404, detail="Profesional no existe en la base de datos (tabla 'profesionales').")
+
+    #  Verificar que el paciente y la profesional tengan el atributo 'activo' en True (si no no pueden tener turnos asignados)
+    if not paciente.activo:
+        raise HTTPException(status_code=400, detail="Paciente inactivo.")
+    if not profesional.activo:
+        raise HTTPException(status_code=400, detail="Profesional inactivo.")
+    
+    bloqueo = hay_bloqueo_agenda(db, profesional_id, inicio, fin)
+    if bloqueo:
+        raise HTTPException(status_code=409, detail="Horario bloqueado en agenda para ese profesional.")
+
+    conflicto_paciente = validar_solapamiento_paciente(db, paciente_id, inicio, fin)
+    if conflicto_paciente:
+        raise HTTPException(status_code=409, detail="El paciente ya tiene un turno en ese horario")
+
+    conflicto_profesional = validar_solapamiento_profesional(db, profesional_id, inicio, fin)
+    if conflicto_profesional:
+        raise HTTPException(status_code=409, detail="El profesional ya tiene un turno en ese horario")
+
+    # Ahora sí se puede crear el turno
+    turno = Turno(
+        paciente_id=paciente_id,
+        profesional_id=profesional_id,
+        estado_id=_estado_id_por_codigo(db, "RESERVADO"),
+        fecha_hora_inicio=inicio,
+        fecha_hora_fin=fin,
+        creado_en=datetime.utcnow()
+    )
+
+    db.add(turno) #INSERT INTO turnos (...) VALUES (...)
+    db.flush()  # para obtener turno.id antes del commit
+    programar_notifs_creacion_turno(db, turno)
+
+    try:
+        db.commit()
+    except  IntegrityError as e:
+        db.rollback()
+        raise HTTPException(status_code=409, detail="Conflicto de integridad al crear turno.\n" + str(e))
+    except Exception as e:
+        # Esto captura, por ejemplo, el UNIQUE de profesional o paciente con misma fecha_hora de inicio
+        db.rollback()
+        raise HTTPException(status_code=400, detail= "Error al crear el turno\n" + str(e))  
+    
+    db.refresh(turno)
+    db.refresh(turno, attribute_names=["estado"])
+
+    return turno
