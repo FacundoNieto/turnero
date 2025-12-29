@@ -67,5 +67,6 @@ __pycache__/
 *.pyd
 *.env
 
-# Archivos varios
+# Archivos/directorios varios
+/db_backups/
 notas.txt
