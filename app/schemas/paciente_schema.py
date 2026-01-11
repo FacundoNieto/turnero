@@ -16,3 +16,9 @@ class PacienteOut(BaseModel): #representa los campos de la tabla pacientes que s
     fecha_alta: datetime
 
     model_config = {"from_attributes": True}
+
+class PacienteUpdate(BaseModel):
+    nombre: Optional[str] = None
+    telefono: Optional[str] = None
+    canal_contacto: Optional[Literal['whatsapp', 'telegram', 'sms']] = None
+    activo: Optional[bool] = None

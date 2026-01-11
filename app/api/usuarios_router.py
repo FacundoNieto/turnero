@@ -29,7 +29,7 @@ def _usuario_to_out(u: Usuario) -> UsuarioOut:
 def crear_usuario(
     payload: UsuarioCreate,
     db: Session = Depends(get_db),
-    _scope: str = Depends(require_permission("auth.usuarios.crear")),
+    scope: str = Depends(require_permission("auth.usuarios.crear")),
 ):
     # El username no debe ya existir en la base de datos
     existe_user = db.execute(select(Usuario).where(Usuario.username == payload.username)).scalar_one_or_none()
@@ -72,7 +72,7 @@ def actualizar_roles_usuario(
     usuario_id: int,
     payload: UsuarioUpdateRoles,
     db: Session = Depends(get_db),
-    _scope: str = Depends(require_permission("auth.usuarios.editar_roles")),
+    scope: str = Depends(require_permission("auth.usuarios.editar_roles")),
 ):
     u = db.get(Usuario, usuario_id)
     if not u:
@@ -95,7 +95,7 @@ def actualizar_roles_usuario(
 @router.get("", response_model=list[UsuarioOut])
 def listar_usuarios(
     db: Session = Depends(get_db),
-    _scope: str = Depends(require_permission("auth.usuarios.editar_roles")),
+    scope: str = Depends(require_permission("auth.usuarios.editar_roles")),
 ):
     stmt = (
         select(Usuario)

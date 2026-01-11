@@ -70,3 +70,4 @@ __pycache__/
 # Archivos/directorios varios
 /db_backups/
 notas.txt
+borrar_users_password.py

@@ -21,6 +21,7 @@ from app.services.turnos_service import (
     EVENTO_CANCELAR,
     EVENTO_COMPLETAR,
     EVENTO_NO_ASISTIO,
+    query_turnos_filtrados,
     )
 
 from app.core.deps import get_current_user, require_permission
@@ -47,10 +48,6 @@ def crear_turno(
 
     return turno
 
-@turnos_router.get("/todos", response_model=list[TurnoOut])
-def obtener_turnos_todos(db: Session = Depends(get_db)):
-    turnos = db.query(Turno).options(joinedload(Turno.estado)).all()
-    return turnos
 
 @turnos_router.get("", response_model=list[TurnoOut])
 def obtener_turnos(
@@ -61,51 +58,39 @@ def obtener_turnos(
     hasta: datetime | None = Query(default=None),
     solo_activos: bool = Query(default=False),
     limit: int = Query(default=200, ge=1, le=1000),
+    user = Depends(get_current_user),
+    scope: str = Depends(require_permission("turnos.ver")),
 ):
     """
     Devuelve turnos filtrados.
     - Si pasás desde/hasta: devuelve turnos que se solapan con ese rango.
     - Si no pasás rango: devuelve los últimos `limit` turnos.
     """
-    q = db.query(Turno).options(joinedload(Turno.estado))
+    q =  query_turnos_filtrados(
+        db,
+        user = user,
+        scope = scope,
+        profesional_id = profesional_id,
+        paciente_id = paciente_id,
+        desde = desde,
+        hasta = hasta,
+        solo_activos = solo_activos,
+    )
 
-
-    if profesional_id is not None:
-        q = q.filter(Turno.profesional_id == profesional_id)
-
-    if paciente_id is not None:
-        q = q.filter(Turno.paciente_id == paciente_id)
-
-    # Filtro por solapamiento con rango [desde, hasta)
-    if desde is not None and hasta is not None:
-        if hasta <= desde:
-            raise HTTPException(status_code=400, detail="hasta debe ser mayor que desde")
-        q = q.filter(
-            desde < Turno.fecha_hora_fin,
-            hasta > Turno.fecha_hora_inicio
-        )
-    elif desde is not None:
-        # desde solo: todo lo que termina después de desde
-        q = q.filter(Turno.fecha_hora_fin > desde)
-    elif hasta is not None:
-        # hasta solo: todo lo que empieza antes de hasta
-        q = q.filter(Turno.fecha_hora_inicio < hasta)
-    else:
-        # Sin rango: por defecto traemos algo razonable
-        q = q.order_by(Turno.id.desc())
-
-    if solo_activos: #trae solo los turnos que esten en estado RESERVADO o CONFIRMADO
-        estado_reservado = _estado_id_por_codigo(db, "RESERVADO")
-        estado_confirmado = _estado_id_por_codigo(db, "CONFIRMADO")
-        q = q.filter(Turno.estado_id.in_([estado_reservado, estado_confirmado]))
-    
-
-    q = q.order_by(Turno.fecha_hora_inicio.asc())
-    return q.limit(limit).all()
+    return (
+        q.order_by(Turno.fecha_hora_inicio.asc())
+        .limit(limit)
+        .all()
+    )
 
 
 @turnos_router.get("/{turno_id}", response_model=TurnoOut)
-def obtener_turno_por_id(turno_id: int, db: Session = Depends(get_db)):
+def obtener_turno_por_id(
+    turno_id: int,
+    db: Session = Depends(get_db),
+    user = Depends(get_current_user),
+    scope: str = Depends(require_permission("turnos.ver")),
+):
     turno = (
         db.query(Turno)
         .options(joinedload(Turno.estado))
@@ -114,6 +99,14 @@ def obtener_turno_por_id(turno_id: int, db: Session = Depends(get_db)):
     )
     if not turno:
         raise HTTPException(status_code=404, detail="Turno no encontrado.")
+
+    # RBAC OWN: si es OWN, solo puede ver turnos de su agenda
+    if scope == "OWN":
+        if not getattr(user, "profesional_id", None):
+            raise HTTPException(status_code=403, detail="Usuario sin profesional asociado.")
+        if turno.profesional_id != user.profesional_id:
+            raise HTTPException(status_code=403, detail="No tenés acceso a este turno.")
+
     return turno
 
 @turnos_router.post("/{turno_id}/confirmar", response_model=TurnoOut)
@@ -127,11 +120,6 @@ def confirmar_turno(
     db.refresh(turno, attribute_names=["estado"])
     return turno
 
-# @turnos_router.post("/{turno_id}/cancelar", response_model=TurnoOut)
-# def cancelar_turno(turno_id: int, db: Session = Depends(get_db)):
-#     turno = aplicar_evento_turno(db, turno_id, EVENTO_CANCELAR)
-#     db.refresh(turno, attribute_names=["estado"])
-#     return turno
 
 @turnos_router.post("/{turno_id}/cancelar", response_model=TurnoOut)
 def cancelar_turno(
@@ -144,6 +132,7 @@ def cancelar_turno(
     db.refresh(turno, attribute_names=["estado"])
     return turno
 
+
 @turnos_router.post("/{turno_id}/completar", response_model=TurnoOut)
 def completar_turno(
     turno_id: int, 
@@ -154,6 +143,7 @@ def completar_turno(
     turno = aplicar_evento_turno(db, turno_id, EVENTO_COMPLETAR, user=user, scope=scope)
     db.refresh(turno, attribute_names=["estado"])
     return turno
+
 
 @turnos_router.post("/{turno_id}/no_asistio", response_model=TurnoOut)
 def marcar_no_asistio(

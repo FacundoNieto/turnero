@@ -50,8 +50,7 @@ def obtener_bloqueos_agenda(
     user = Depends(get_current_user),
     scope: str = Depends(require_permission("agenda.bloqueos.ver")),
 ):
-    # bloqueos = db.query(BloqueoAgenda).all()
-    # return bloqueos 
+
     q = db.query(BloqueoAgenda).filter(BloqueoAgenda.activo == True)
 
     if scope == "OWN":
@@ -62,10 +61,22 @@ def obtener_bloqueos_agenda(
     return q.all()
 
 @bloqueos_agenda_router.get("/{bloqueo_id}", response_model=BloqueoAgendaOut)
-def obtener_bloqueo_por_id(bloqueo_id: int, db: Session = Depends(get_db)):
+def obtener_bloqueo_por_id(
+    bloqueo_id: int, db: 
+    Session = Depends(get_db),
+    user = Depends(get_current_user),
+    scope: str = Depends(require_permission("agenda.bloqueos.ver")),
+):
     bloqueo = db.get(BloqueoAgenda, bloqueo_id)
     if not bloqueo:
         raise HTTPException(status_code=404, detail="Bloqueo de agenda no encontrado.")
+
+    if scope == "OWN":
+        if not getattr(user, "profesional_id", None):
+            raise HTTPException(status_code=403, detail="Usuario sin profesional asociado.")
+        if bloqueo.profesional_id != user.profesional_id:
+            raise HTTPException(status_code=403, detail="No tenés acceso a este bloqueo.")
+
     return bloqueo 
 
 @bloqueos_agenda_router.delete("/{bloqueo_id}")

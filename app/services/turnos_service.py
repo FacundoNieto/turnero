@@ -1,5 +1,5 @@
 #acá va la lógica del proyecto y no en los endpoints que está en app/api/turnos.py
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from fastapi import HTTPException
@@ -265,3 +265,46 @@ def crear_turno(
     db.refresh(turno, attribute_names=["estado"])
 
     return turno
+
+
+def query_turnos_filtrados(
+    db: Session,
+    *,
+    user=None,
+    scope: str = "ANY",
+    profesional_id: int | None = None,
+    paciente_id: int | None = None,
+    desde: datetime | None = None,
+    hasta: datetime | None = None,
+    solo_activos: bool = False,
+):
+    q = db.query(Turno).options(joinedload(Turno.estado))
+
+    # RBAC OWN: si es OWN, el profesional_id real lo impone el token
+    if scope == "OWN":
+        if not user or not getattr(user, "profesional_id", None):
+            raise HTTPException(status_code=403, detail="Usuario sin profesional asociado.")
+        q = q.filter(Turno.profesional_id == user.profesional_id)
+
+    # Filtros “de negocio” (solo se aplican encima de RBAC)
+    if profesional_id is not None:
+        q = q.filter(Turno.profesional_id == profesional_id)
+
+    if paciente_id is not None:
+        q = q.filter(Turno.paciente_id == paciente_id)
+
+    if desde is not None and hasta is not None:
+        if hasta <= desde:
+            raise HTTPException(status_code=400, detail="hasta debe ser mayor que desde")
+        q = q.filter(desde < Turno.fecha_hora_fin, hasta > Turno.fecha_hora_inicio)
+    elif desde is not None:
+        q = q.filter(Turno.fecha_hora_fin > desde)
+    elif hasta is not None:
+        q = q.filter(Turno.fecha_hora_inicio < hasta)
+
+    if solo_activos:
+        estado_reservado = _estado_id_por_codigo(db, "RESERVADO")
+        estado_confirmado = _estado_id_por_codigo(db, "CONFIRMADO")
+        q = q.filter(Turno.estado_id.in_([estado_reservado, estado_confirmado]))
+
+    return q

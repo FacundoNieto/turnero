@@ -17,3 +17,9 @@ class ProfesionalOut(BaseModel): #representa los campos de la tabla profesionale
     model_config = {
         "from_attributes": True
     }
+
+class ProfesionalUpdate(BaseModel):
+    nombre: Optional[str] = None
+    especialidad: Optional[str] = None
+    duracion_turno_min: Optional[int] = None
+    activo: Optional[bool] = None
