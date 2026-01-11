@@ -11,6 +11,10 @@ scheduler = BackgroundScheduler()
 
 from app.notificaciones_scheduler import procesar_notificaciones
 
+from app.api.auth_router import router as auth_router
+from app.api.usuarios_router import router as usuarios_router
+from app.api.roles_router import router as roles_router
+from app.api.permisos_router import router as permisos_router
 
 app = FastAPI(title="Sistema de Gestión de Turnos")
 app.include_router(turnos_router, prefix="/api")
@@ -18,6 +22,10 @@ app.include_router(paciente_router, prefix="/api")
 app.include_router(profesionales_router, prefix="/api")
 app.include_router(bloqueos_agenda_router, prefix="/api")
 app.include_router(estados_turno_router, prefix="/api")
+app.include_router(auth_router, prefix="/api")
+app.include_router(usuarios_router, prefix="/api")
+app.include_router(roles_router, prefix="/api")
+app.include_router(permisos_router, prefix="/api")
 
 @app.get("/health")
 def health_check():

@@ -30,7 +30,7 @@ def crear_paciente(payload: PacienteCreate, db: Session = Depends(get_db)):
     db.refresh(paciente)
     return paciente
 
-# Agregar metodos get que devuelvan todos los pacientes y pacientes por id, y metodos put para actualizar pacientes
+# Agregar metodos get que devuelvan todos los pacientes y pacientes por id, y metodos patch para actualizar pacientes
 
 @paciente_router.get("", response_model=list[PacienteOut])
 def obtener_pacientes(db: Session = Depends(get_db)):

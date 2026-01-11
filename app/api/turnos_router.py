@@ -23,16 +23,26 @@ from app.services.turnos_service import (
     EVENTO_NO_ASISTIO,
     )
 
+from app.core.deps import get_current_user, require_permission
+from app.services.ownership_service import assert_turno_ownership
+
 turnos_router = APIRouter(prefix="/turnos", tags=["turnos"])
 
 @turnos_router.post("", response_model = TurnoOut)
-def crear_turno(payload: TurnoCreate, db: Session = Depends(get_db)):
+def crear_turno(
+    payload: TurnoCreate, 
+    db: Session = Depends(get_db),
+    user = Depends(get_current_user),
+    scope: str = Depends(require_permission("turnos.crear")),
+):
     turno = crear_turno_service(
         db,
         paciente_id = payload.paciente_id,
         profesional_id = payload.profesional_id,
         inicio = payload.fecha_hora_inicio,
         fin = payload.fecha_hora_fin,
+        user = user,
+        scope = scope,
     )
 
     return turno
@@ -107,25 +117,51 @@ def obtener_turno_por_id(turno_id: int, db: Session = Depends(get_db)):
     return turno
 
 @turnos_router.post("/{turno_id}/confirmar", response_model=TurnoOut)
-def confirmar_turno(turno_id: int, db: Session = Depends(get_db)):
-    turno = aplicar_evento_turno(db, turno_id, EVENTO_CONFIRMAR)
+def confirmar_turno(
+    turno_id: int, 
+    db: Session = Depends(get_db),
+    user = Depends(get_current_user),
+    scope: str = Depends(require_permission("turnos.confirmar")),
+):
+    turno = aplicar_evento_turno(db, turno_id, EVENTO_CONFIRMAR, user=user, scope=scope)
     db.refresh(turno, attribute_names=["estado"])
     return turno
 
+# @turnos_router.post("/{turno_id}/cancelar", response_model=TurnoOut)
+# def cancelar_turno(turno_id: int, db: Session = Depends(get_db)):
+#     turno = aplicar_evento_turno(db, turno_id, EVENTO_CANCELAR)
+#     db.refresh(turno, attribute_names=["estado"])
+#     return turno
+
 @turnos_router.post("/{turno_id}/cancelar", response_model=TurnoOut)
-def cancelar_turno(turno_id: int, db: Session = Depends(get_db)):
-    turno = aplicar_evento_turno(db, turno_id, EVENTO_CANCELAR)
+def cancelar_turno(
+    turno_id: int, 
+    db: Session = Depends(get_db),
+    user = Depends(get_current_user),
+    scope: str = Depends(require_permission("turnos.cancelar")),
+):
+    turno = aplicar_evento_turno(db, turno_id, EVENTO_CANCELAR, user=user, scope=scope)
     db.refresh(turno, attribute_names=["estado"])
     return turno
 
 @turnos_router.post("/{turno_id}/completar", response_model=TurnoOut)
-def completar_turno(turno_id: int, db: Session = Depends(get_db)):
-    turno = aplicar_evento_turno(db, turno_id, EVENTO_COMPLETAR)
+def completar_turno(
+    turno_id: int, 
+    db: Session = Depends(get_db), 
+    user = Depends(get_current_user), 
+    scope: str = Depends(require_permission("turnos.completar"))
+):
+    turno = aplicar_evento_turno(db, turno_id, EVENTO_COMPLETAR, user=user, scope=scope)
     db.refresh(turno, attribute_names=["estado"])
     return turno
 
 @turnos_router.post("/{turno_id}/no_asistio", response_model=TurnoOut)
-def marcar_no_asistio(turno_id: int, db: Session = Depends(get_db)):
-    turno = aplicar_evento_turno(db, turno_id, EVENTO_NO_ASISTIO)
+def marcar_no_asistio(
+    turno_id: int, 
+    db: Session = Depends(get_db),
+    user = Depends(get_current_user),
+    scope: str = Depends(require_permission("turnos.no_asistio"))
+):
+    turno = aplicar_evento_turno(db, turno_id, EVENTO_NO_ASISTIO, user=user, scope=scope)
     db.refresh(turno, attribute_names=["estado"])
     return turno

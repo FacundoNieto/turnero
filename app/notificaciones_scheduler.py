@@ -26,10 +26,11 @@ def procesar_notificaciones():
                 db.add(n)
                 db.commit()
             except Exception as e:
-                n.estado = "FALLIDA"
-                n.ultimo_error = str(e)
-                db.add(n)
-                db.commit()
+                # n.estado = "FALLIDA"
+                # n.ultimo_error = str(e)
+                # db.add(n)
+                # db.commit()
+                db.rollback()
 
     finally:
         db.close()

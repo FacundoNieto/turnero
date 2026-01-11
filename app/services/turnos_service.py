@@ -52,7 +52,10 @@ def aplicar_evento_turno(
     db: Session,
     turno_id: int,
     evento: str,
-    actor: str | None = None # opcional: "paciente" / "profesional" / "sistema"
+    actor: str | None = None, # opcional: "paciente" / "profesional" / "sistema"
+    *,
+    user=None,
+    scope: str = "ANY",  # "OWN" o "ANY"
 ):
     turno = db.execute(
         select(Turno).where(Turno.id == turno_id).with_for_update() # SELECT ... FOR UPDATE (bloquea)
@@ -61,11 +64,26 @@ def aplicar_evento_turno(
     if not turno:
         raise HTTPException(status_code=404, detail="Turno no encontrado.")
     
+
+    #######################################
+
+    # ---- RBAC: ownership ----
+    if scope == "OWN":
+        if not user or not getattr(user, "profesional_id", None):
+            raise HTTPException(status_code=403, detail="Usuario sin profesional asociado.")
+        if turno.profesional_id != user.profesional_id:
+            raise HTTPException(status_code=403, detail="No tenés acceso a este turno.")
+
+    #######################################
+    
     estado_actual_codigo = _codigo_por_estado_id(db, turno.estado_id)
 
     clave = (estado_actual_codigo, evento)
     if clave not in TRANSICIONES:
-        raise HTTPException(status_code=409, detail = f'Transición prohibida: {estado_actual_codigo} + {evento} no es una transición válida.')
+        raise HTTPException(
+            status_code=409, 
+            detail = f'Transición prohibida: {estado_actual_codigo} + {evento} no es una transición válida.'
+        )
     
     nuevo_estado_codigo = TRANSICIONES[clave] # devuelve el código (string) del nuevo estado, ver diccionario TRANSICIONES
     turno.estado_id = _estado_id_por_codigo(db, nuevo_estado_codigo) # actualiza estado_id del turno
@@ -76,6 +94,15 @@ def aplicar_evento_turno(
         turno.confirmado_en = ahora
     elif nuevo_estado_codigo == "CANCELADO":
         turno.cancelado_en = ahora
+
+    ########################################
+
+    # ---- trazabilidad (RBAC)----
+    turno.actualizado_en = ahora
+    if user:
+        turno.actualizado_por_usuario_id = user.id
+
+    ########################################
 
     # Gestión de notificaciones asociadas al turno
     # Importante: NO envían nada acá, solo encolan en DB.
@@ -140,6 +167,7 @@ def hay_bloqueo_agenda(db: Session, profesional_id: int, inicio: datetime, fin: 
     return (
         db.query(BloqueoAgenda).filter(
             BloqueoAgenda.profesional_id == profesional_id,
+            BloqueoAgenda.activo == True,
             inicio < BloqueoAgenda.fecha_hora_fin,
             fin > BloqueoAgenda.fecha_hora_inicio,
         ).first()
@@ -153,10 +181,22 @@ def crear_turno(
     profesional_id: int,
     inicio: datetime,
     fin: datetime,
+    user=None,
+    scope: str = "ANY",
 ):
     # Validaciones
     if fin <= inicio:
         raise HTTPException(status_code=400, detail="La fecha de inicio debe ser anterior a la fecha de fin.")
+
+    ###########################################
+
+    # RBAC: si es OWN, el profesional_id lo decide el token, no el payload
+    if scope == "OWN":
+        if not user or not getattr(user, "profesional_id", None):
+            raise HTTPException(status_code=403, detail="Usuario sin profesional asociado.")
+        profesional_id = user.profesional_id
+
+    ###########################################
 
     # Verificar que el paciente y la profesional ingresados ya existan en la base de datos antes de crear el turno
     paciente = db.get(Paciente, paciente_id) #SELECT * FROM pacientes WHERE id = payload.paciente_id
@@ -187,14 +227,25 @@ def crear_turno(
         raise HTTPException(status_code=409, detail="El profesional ya tiene un turno en ese horario")
 
     # Ahora sí se puede crear el turno
+    ahora = datetime.utcnow()
     turno = Turno(
         paciente_id=paciente_id,
         profesional_id=profesional_id,
         estado_id=_estado_id_por_codigo(db, "RESERVADO"),
         fecha_hora_inicio=inicio,
         fecha_hora_fin=fin,
-        creado_en=datetime.utcnow()
+        creado_en=ahora,
     )
+
+    ####################################################
+
+    # trazabilidad (RBAC)
+    if user:
+        turno.creado_por_usuario_id = user.id
+        turno.actualizado_por_usuario_id = user.id
+        turno.actualizado_en = ahora
+
+    ####################################################
 
     db.add(turno) #INSERT INTO turnos (...) VALUES (...)
     db.flush()  # para obtener turno.id antes del commit
