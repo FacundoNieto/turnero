@@ -1,4 +1,5 @@
-from pydantic import BaseModel, field_validator
+from pydantic import BaseModel, field_validator, Field
+from typing import Optional, Literal
 from datetime import datetime, timezone
 from app.schemas.estado_turno_schema import EstadoTurnoOut
 
@@ -7,6 +8,12 @@ class TurnoCreate(BaseModel): #representa los datos que se necesitan para insert
     profesional_id: int
     fecha_hora_inicio: datetime
     fecha_hora_fin: datetime
+    estado_inicial: Optional[Literal["RESERVADO", "CONFIRMADO"]] = Field(
+        default=None,
+        description="Default: admin => CONFIRMADO, resto => RESERVADO",
+        example="CONFIRMADO",
+    )
+
     auto_confirm: bool | None = None #opcional, si se quiere que el turno se confirme automáticamente al crearlo
 
     @field_validator("fecha_hora_inicio", "fecha_hora_fin")

@@ -1,0 +1,8 @@
+[33mec47a03[m feat(FSM): admin puede crear turnos confirmados
+app/api/pacientes_router.py
+app/api/turnos_router.py
+app/models/paciente_model.py
+app/schemas/paciente_schema.py
+app/schemas/turno_schema.py
+app/services/turnos_service.py
+db_buckups/suckhadb-13-01-26.sql
