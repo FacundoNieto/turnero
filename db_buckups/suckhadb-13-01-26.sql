@@ -200,7 +200,7 @@ CREATE TABLE `permisos` (
   `descripcion` varchar(255) COLLATE utf8mb4_spanish_ci DEFAULT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `uq_perm_codigo` (`codigo`)
-) ENGINE=InnoDB AUTO_INCREMENT=19 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_spanish_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=20 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_spanish_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -209,7 +209,7 @@ CREATE TABLE `permisos` (
 
 LOCK TABLES `permisos` WRITE;
 /*!40000 ALTER TABLE `permisos` DISABLE KEYS */;
-INSERT INTO `permisos` VALUES (1,'turnos.ver','Ver turnos'),(2,'turnos.crear','Crear turnos'),(3,'turnos.confirmar','Confirmar turnos'),(4,'turnos.cancelar','Cancelar turnos'),(5,'turnos.completar','Completar turnos'),(6,'turnos.no_asistio','Marcar no asistió'),(7,'pacientes.ver','Ver pacientes'),(8,'pacientes.crear','Crear pacientes'),(9,'pacientes.editar','Editar pacientes'),(10,'agenda.bloqueos.crear','Crear bloqueos de agenda'),(11,'agenda.bloqueos.eliminar','Eliminar bloqueos de agenda'),(12,'profesionales.ver','Ver profesionales'),(13,'profesionales.crear','Crear profesionales'),(14,'profesionales.editar','Editar profesionales'),(15,'auth.usuarios.crear','Crear usuarios'),(16,'auth.usuarios.editar_roles','Editar roles de usuarios'),(17,'auth.usuarios.reset_password','Resetear password de usuarios'),(18,'agenda.bloqueos.ver','Ver bloqueos de agenda');
+INSERT INTO `permisos` VALUES (1,'turnos.ver','Ver turnos'),(2,'turnos.crear','Crear turnos'),(3,'turnos.confirmar','Confirmar turnos'),(4,'turnos.cancelar','Cancelar turnos'),(5,'turnos.completar','Completar turnos'),(6,'turnos.no_asistio','Marcar no asistió'),(7,'pacientes.ver','Ver pacientes'),(8,'pacientes.crear','Crear pacientes'),(9,'pacientes.editar','Editar pacientes'),(10,'agenda.bloqueos.crear','Crear bloqueos de agenda'),(11,'agenda.bloqueos.eliminar','Eliminar bloqueos de agenda'),(12,'profesionales.ver','Ver profesionales'),(13,'profesionales.crear','Crear profesionales'),(14,'profesionales.editar','Editar profesionales'),(15,'auth.usuarios.crear','Crear usuarios'),(16,'auth.usuarios.editar_roles','Editar roles de usuarios'),(17,'auth.usuarios.reset_password','Resetear password de usuarios'),(18,'agenda.bloqueos.ver','Ver bloqueos de agenda'),(19,'estados_turno.ver','Ver tipos de estado posibles para turnos');
 /*!40000 ALTER TABLE `permisos` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -291,7 +291,7 @@ CREATE TABLE `rol_permisos` (
 
 LOCK TABLES `rol_permisos` WRITE;
 /*!40000 ALTER TABLE `rol_permisos` DISABLE KEYS */;
-INSERT INTO `rol_permisos` VALUES (1,1,'ANY'),(3,1,'OWN'),(4,1,'OWN'),(1,2,'ANY'),(3,2,'OWN'),(1,3,'ANY'),(3,3,'OWN'),(1,4,'ANY'),(3,4,'OWN'),(4,4,'OWN'),(1,5,'ANY'),(3,5,'OWN'),(1,6,'ANY'),(3,6,'OWN'),(1,7,'ANY'),(1,8,'ANY'),(1,9,'ANY'),(1,10,'ANY'),(3,10,'OWN'),(1,11,'ANY'),(3,11,'OWN'),(1,12,'ANY'),(1,13,'ANY'),(1,14,'ANY'),(1,15,'ANY'),(1,16,'ANY'),(1,17,'ANY'),(1,18,'ANY'),(2,18,'ANY'),(3,18,'OWN');
+INSERT INTO `rol_permisos` VALUES (1,1,'ANY'),(3,1,'OWN'),(4,1,'OWN'),(1,2,'ANY'),(3,2,'OWN'),(1,3,'ANY'),(3,3,'OWN'),(1,4,'ANY'),(3,4,'OWN'),(4,4,'OWN'),(1,5,'ANY'),(3,5,'OWN'),(1,6,'ANY'),(3,6,'OWN'),(1,7,'ANY'),(1,8,'ANY'),(1,9,'ANY'),(1,10,'ANY'),(3,10,'OWN'),(1,11,'ANY'),(3,11,'OWN'),(1,12,'ANY'),(1,13,'ANY'),(1,14,'ANY'),(1,15,'ANY'),(1,16,'ANY'),(1,17,'ANY'),(1,18,'ANY'),(2,18,'ANY'),(3,18,'OWN'),(1,19,'ANY'),(2,19,'ANY');
 /*!40000 ALTER TABLE `rol_permisos` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -440,4 +440,4 @@ UNLOCK TABLES;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2026-01-10 17:55:51
+-- Dump completed on 2026-01-13 19:06:17

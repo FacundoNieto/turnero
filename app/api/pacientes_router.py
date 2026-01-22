@@ -28,6 +28,8 @@ def crear_paciente(
     
     paciente = Paciente(
         nombre = payload.nombre,
+        dni = payload.dni,
+        cuil = payload.cuil,
         telefono = payload.telefono,
         canal_contacto = payload.canal_contacto,
     )

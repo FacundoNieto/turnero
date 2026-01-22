@@ -6,6 +6,8 @@ class Paciente(Base):
 
     id = Column(Integer, primary_key=True)
     nombre = Column(String(100), nullable=False)
+    dni = Column(String(20), unique=True, nullable=True)
+    cuil = Column(String(20), unique=True, nullable=True)
     telefono = Column(String(20), nullable=False)
     canal_contacto = Column(
             Enum(
