@@ -36,20 +36,6 @@ def crear_turno(
     user = Depends(get_current_user),
     scope: str = Depends(require_permission("turnos.crear")),
 ):
-    es_prof = bool(getattr(user, "profesional_id", None))
-    puede_auto_confirmar = (scope == "ANY") or es_prof
-
-    # Default: admin crea confirmado, resto reservado
-    if payload.auto_confirm is None:
-        auto_confirm = True if scope == "ANY" else False
-    else:
-        if payload.auto_confirm and not puede_auto_confirmar:
-            raise HTTPException(
-                status_code=403,
-                detail="No autorizado a crear turnos confirmados directamente.",
-            )
-        auto_confirm = bool(payload.auto_confirm)
-
     turno = crear_turno_service(
         db,
         paciente_id = payload.paciente_id,
@@ -58,7 +44,6 @@ def crear_turno(
         fin = payload.fecha_hora_fin,
         user = user,
         scope = scope,
-        auto_confirm=auto_confirm,
     )
 
     return turno
@@ -93,7 +78,7 @@ def obtener_turnos(
     )
 
     return (
-        q.order_by(Turno.fecha_hora_inicio.desc())
+        q.order_by(Turno.fecha_hora_inicio.asc())
         .limit(limit)
         .all()
     )

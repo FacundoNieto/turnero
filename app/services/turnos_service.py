@@ -183,7 +183,6 @@ def crear_turno(
     fin: datetime,
     user=None,
     scope: str = "ANY",
-    auto_confirm: bool = False,
 ):
     # Validaciones
     if fin <= inicio:
@@ -229,36 +228,28 @@ def crear_turno(
 
     # Ahora sí se puede crear el turno
     ahora = datetime.utcnow()
-    estado_codigo = "CONFIRMADO" if auto_confirm else "RESERVADO"
     turno = Turno(
         paciente_id=paciente_id,
         profesional_id=profesional_id,
-        estado_id=_estado_id_por_codigo(db, estado_codigo),
+        estado_id=_estado_id_por_codigo(db, "RESERVADO"),
         fecha_hora_inicio=inicio,
         fecha_hora_fin=fin,
         creado_en=ahora,
     )
 
     ####################################################
+
     # trazabilidad (RBAC)
     if user:
         turno.creado_por_usuario_id = user.id
         turno.actualizado_por_usuario_id = user.id
         turno.actualizado_en = ahora
 
-    if auto_confirm:
-        turno.confirmado_en = ahora
-        turno.actualizado_en = ahora
     ####################################################
 
     db.add(turno) #INSERT INTO turnos (...) VALUES (...)
     db.flush()  # para obtener turno.id antes del commit
-    
-    # Notificaciones asociadas al turno
-    if auto_confirm:
-        programar_notifs_confirmacion(db, turno)
-    else:
-        programar_notifs_creacion_turno(db, turno)
+    programar_notifs_creacion_turno(db, turno)
 
     try:
         db.commit()
