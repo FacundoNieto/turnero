@@ -1,0 +1,28 @@
+{
+  "name": "sukha-frontend",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start"
+  },
+  "dependencies": {
+    "next": "^14.0.0",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "tailwindcss": "^3.4.0",
+    "postcss": "^8.4.0",
+    "autoprefixer": "^10.4.0",
+    "react-hook-form": "^7.45.0",
+    "zod": "^3.23.0",
+    "jwt-decode": "^3.1.2",
+    "@tanstack/react-query": "^4.34.0",
+    "clsx": "^1.2.1"
+  },
+  "devDependencies": {
+    "typescript": "^5.1.6",
+    "@types/react": "^18.2.25",
+    "@types/node": "^20.4.2"
+  }
+}

@@ -1,0 +1,12 @@
+node_modules/
+.next/
+dist/
+env.local
+.env.local
+*.log
+package-lock.json
+pnpm-lock.yaml
+yarn.lock
+/.turbo
+/.idea
+/.vscode
