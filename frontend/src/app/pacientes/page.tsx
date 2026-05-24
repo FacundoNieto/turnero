@@ -11,6 +11,8 @@ type Paciente = {
   dni?: string | null
   cuil?: string | null
   activo?: boolean
+  telefono?: string | null
+  canal_contacto?: string | null
 }
 
 async function fetchPacientes() {
@@ -79,7 +81,8 @@ export default function PacientesPage() {
   // build permissions set compatible with helper
   const permsSet = React.useMemo(() => {
     if (!me) return new Set<string>()
-    if (Array.isArray(me.permissions)) return new Set(me.permissions)
+    // if (Array.isArray(me.permissions)) return new Set(me.permissions)
+    if (Array.isArray(me.permissions)) return new Set<string>(me.permissions as string[])
     return flattenPermissions(me.permissions || {})
   }, [me])
 
