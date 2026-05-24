@@ -23,9 +23,17 @@ wheelhouse/
 
 # Dependencias instaladas localmente
 .env
-.env.*
+.env.local
+.env.development
+.env.production
+.env.test
+
+# secretos extra
 secrets.env
-*.env
+
+# permitir templates
+!.env.example
+!frontend/.env.example
 
 # Logs y reportes
 *.log

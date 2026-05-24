@@ -1,3 +1,5 @@
+import os
+from dotenv import load_dotenv
 from fastapi import FastAPI
 from app.api.turnos_router import turnos_router
 from app.api.pacientes_router import paciente_router
@@ -16,7 +18,30 @@ from app.api.usuarios_router import router as usuarios_router
 from app.api.roles_router import router as roles_router
 from app.api.permisos_router import router as permisos_router
 
+from fastapi.middleware.cors import CORSMiddleware
+
 app = FastAPI(title="Sistema de Gestión de Turnos")
+
+load_dotenv() # Carga las variables de entorno desde el archivo .env
+
+FRONTEND_URL = os.getenv("FRONTEND_URL")
+
+origins = [
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+]
+
+if FRONTEND_URL:
+    origins.append(FRONTEND_URL)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 app.include_router(turnos_router, prefix="/api")
 app.include_router(paciente_router, prefix="/api")
 app.include_router(profesionales_router, prefix="/api")
