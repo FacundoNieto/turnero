@@ -30,7 +30,8 @@ export default function LoginPage() {
       // Invalidate / refresh cached `me` before navigating so Sidebar
       // doesn't show the previous user's links.
       try {
-        await queryClient.invalidateQueries({ queryKey: ['me'], refetchInactive: true })
+        // await queryClient.invalidateQueries({ queryKey: ['me'], refetchInactive: true })
+        await queryClient.invalidateQueries({ queryKey: ['me'] })
       } catch (e) {
         // ignore
       }
