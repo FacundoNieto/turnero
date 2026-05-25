@@ -23,17 +23,22 @@ export async function GET() {
 
     const res = await fetch(`${BACKEND}/api/auth/me`, {
       method: 'GET',
-      headers: token ? { Authorization: `Bearer ${token}` } : {},
+      headers: token
+        ? { Authorization: `Bearer ${token}` }
+        : {},
+      cache: 'no-store',
     })
 
     const text = await res.text()
 
     return new NextResponse(text, {
       status: res.status,
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+      },
     })
   } catch (err) {
-    console.error(err)
+    console.error('AUTH_ME_ERROR:', err)
 
     return NextResponse.json(
       { error: 'backend unreachable' },
