@@ -11,8 +11,6 @@ type Paciente = {
   dni?: string | null
   cuil?: string | null
   activo?: boolean
-  telefono?: string | null
-  canal_contacto?: string | null
 }
 
 async function fetchPacientes() {
@@ -81,8 +79,7 @@ export default function PacientesPage() {
   // build permissions set compatible with helper
   const permsSet = React.useMemo(() => {
     if (!me) return new Set<string>()
-    // if (Array.isArray(me.permissions)) return new Set(me.permissions)
-    if (Array.isArray(me.permissions)) return new Set<string>(me.permissions as string[])
+    if (Array.isArray(me.permissions)) return new Set(me.permissions)
     return flattenPermissions(me.permissions || {})
   }, [me])
 
@@ -109,17 +106,6 @@ export default function PacientesPage() {
   const [openFilter, setOpenFilter] = React.useState<string | null>(null)
   const [tempValue, setTempValue] = React.useState<string>('')
   const [filters, setFilters] = React.useState<{ nombre?: string; telefono?: string; dni?: string; cuil?: string }>({})
-
-  // close filter popup when clicking outside
-  React.useEffect(() => {
-    function onDocClick(e: MouseEvent) {
-      const target = e.target as HTMLElement
-      const insideFilterPopup = !!target.closest('[data-filter]')
-      if (!insideFilterPopup && openFilter !== null) setOpenFilter(null)
-    }
-    document.addEventListener('mousedown', onDocClick)
-    return () => document.removeEventListener('mousedown', onDocClick)
-  }, [openFilter])
 
   const onCreate = async (vals: any) => {
     try {

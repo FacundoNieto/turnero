@@ -17,6 +17,7 @@ const BACKEND = process.env.BACKEND_API_URL || process.env.NEXT_PUBLIC_API_URL |
 //   return new NextResponse(text, { status: res.status, headers: { 'Content-Type': 'application/json' } })
 // }
 export async function GET() {
+  console.log('==VALOR DE LA VARIABLE DE ENTORNO BACKEND ==:',BACKEND)
   try {
     const cookieStore = cookies()
     const token = cookieStore.get('access_token')?.value
