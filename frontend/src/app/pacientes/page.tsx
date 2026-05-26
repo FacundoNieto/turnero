@@ -353,12 +353,20 @@ export default function PacientesPage() {
 }
 
 function InlineEditPaciente({ paciente, onSave, onCancel }: any) {
-  const { register, handleSubmit } = useForm<{ nombre: string; dni?: string; cuil?: string }>({ defaultValues: { nombre: paciente.nombre, dni: paciente.dni ?? '', cuil: paciente.cuil ?? '' } })
+  const { register, handleSubmit } = useForm<{ nombre: string; dni?: string; cuil?: string; telefono?: string }>({
+    defaultValues: {
+      nombre: paciente.nombre,
+      dni: paciente.dni ?? '',
+      cuil: paciente.cuil ?? '',
+      telefono: paciente.telefono ?? '',
+    },
+  })
   return (
     <form onSubmit={handleSubmit(onSave)} className="flex gap-2">
       <input {...register('nombre')} className="border p-1 rounded" />
       <input {...register('dni')} className="border p-1 rounded" placeholder="DNI" />
       <input {...register('cuil')} className="border p-1 rounded" placeholder="CUIL" />
+      <input {...register('telefono')} className="border p-1 rounded" placeholder="Teléfono" />
       <div className="flex items-center gap-2">
         <button type="submit" className="px-2 py-1 bg-blue-600 text-white rounded">Guardar</button>
         <button type="button" onClick={onCancel} className="px-2 py-1 bg-gray-200 rounded">Cancelar</button>
